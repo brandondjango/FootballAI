@@ -12,7 +12,7 @@ class PostgresConnector:
     def create_connection(self, db_name):
         try:
             self.connection = psycopg2.connect(
-                    host="34.136.28.192",
+                    host="localhost",
                     database="premier_league_stats",
                     user="bdon_db",
                     password=os.environ['DB_PASS'],
