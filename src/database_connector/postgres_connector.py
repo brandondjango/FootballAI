@@ -45,7 +45,7 @@ class PostgresConnector:
             self.cursor.execute(query, params)
             result = self.cursor.fetchall()  # Fetch all rows from the last executed statement
             return result
-        except OperationalError as e:
+        except Exception as e:
             self.connection.rollback()
             print(f"The error '{e}' occurred")
             return None
