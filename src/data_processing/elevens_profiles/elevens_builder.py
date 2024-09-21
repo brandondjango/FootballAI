@@ -1,4 +1,5 @@
 import os
+import json
 
 from src.database_connector.postgres_connector import PostgresConnector
 
@@ -41,6 +42,7 @@ class ElevensBuilderUtil:
         elevens = {}
         #store when each 11 came onto the field
         minute_eleven_profile_went_on = {}
+
         #for both teams
         for team in base_eleven_profile.keys():
             #get starters that were subbed off
@@ -77,11 +79,11 @@ class ElevensBuilderUtil:
 
                 elevens[updated_elevens_id] = current_elevens
                 minute_eleven_profile_went_on[updated_elevens_id] = minute_of_subs
-        print(len(minute_eleven_profile_went_on.keys()))
 
 
 
-        ElevensBuilderUtil.save_elevens_profiles(elevens, minute_eleven_profile_went_on)
+
+            ElevensBuilderUtil.save_elevens_profiles(elevens, minute_eleven_profile_went_on, team, match_id)
 
 
 
@@ -149,9 +151,23 @@ class ElevensBuilderUtil:
         return id_to_return
 
     @staticmethod
-    def save_elevens_profiles(elevens: {}, minute_eleven_profile_went_on: {}):
-        print(elevens)
-        print(minute_eleven_profile_went_on)
+    def save_elevens_profiles(elevens: {}, minute_eleven_profile_went_on: {}, team: str, match_id: str):
+        json_player_array = []
+        for elevens_id in elevens.keys():
+            for player_touple in elevens[elevens_id]:
+                player_hash = {}
+                player_hash["player_id"] = player_touple[0]
+                player_hash["player_name"] = player_touple[1]
+            json_player_array.append(json.dumps(player_hash))
+        print(team)
+        print(elevens_id)
+        print(json_player_array)
+        print(match_id)
+        print(minute_eleven_profile_went_on[elevens_id])
+        print("\n\n\n")
+
+
+
 
 
 
