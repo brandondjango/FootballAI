@@ -7,24 +7,12 @@ from src.database_connector.postgres_connector import PostgresConnector
 #red cards not accounted for
 class ElevensBuilderUtil:
 
-    def elevens_builder(match_id, postgres_connector=None):
-        if(postgres_connector is None):
-            postgres_connector = PostgresConnector()
-            postgres_connector.open_connection_cursor("premier_league_stats")
-
-        select_query = "select player_id, player, team_id, subbed_off, subbed_on from match_summary_stats where match_id = '" + match_id + "'"
-        select_parameters = ()
-
-        match_players = postgres_connector.execute_parameterized_select_query(select_query, select_parameters)
-
-        initial_elevens_by_team_id = {}
-
-        #split the players into their teams
-        for player in match_players:
-            team_id = player[2]
-            if initial_elevens_by_team_id.get(team_id) is None:
-                initial_elevens_by_team_id[team_id] = []
-            initial_elevens_by_team_id[team_id].append(player)
+    @staticmethod
+    def elevens_builder(match_id):
+        #player_tuples
+        match_players = ElevensBuilderUtil.get_match_players(match_id)
+        #hash splitting player_tuples by team id
+        initial_elevens_by_team_id = ElevensBuilderUtil.split_players_into_teams(match_players)
 
 
         #store substituted players so we can build the varied 11s
@@ -51,7 +39,8 @@ class ElevensBuilderUtil:
 
         #create elevens based on subbed on and off players
         elevens = {}
-
+        #store when each 11 came onto the field
+        minute_eleven_profile_went_on = {}
         #for both teams
         for team in base_eleven_profile.keys():
             #get starters that were subbed off
@@ -59,14 +48,22 @@ class ElevensBuilderUtil:
             for subbed_off_player in subbed_off_players[team]:
                 if subbed_off_player[4] is None:
                     starters.append(subbed_off_player)
+
+            #starters profile id
+            starters_profile_id = ElevensBuilderUtil.id_for_player_touple(starters)
+
             #starters 11s profile
-            elevens[ElevensBuilderUtil.id_for_player_touple(starters)] = starters
+            elevens[starters_profile_id] = starters
 
             current_elevens = starters
 
             #account for group substititions so we don't create multiple 11s for substitutions of 2 or more
             grouped_subbed_on_players = ElevensBuilderUtil.group_subbed_on_players_by_minute(subbed_on_players[team])
             group_subbed_off_players = ElevensBuilderUtil.group_subbed_off_players_by_minute(subbed_off_players[team])
+
+
+            #store starters
+            minute_eleven_profile_went_on[starters_profile_id] = "0"
             for minute_of_subs in grouped_subbed_on_players.keys():
                 current_subbed_on_group = grouped_subbed_on_players[minute_of_subs]
                 current_subbed_off_group = group_subbed_off_players[minute_of_subs]
@@ -76,18 +73,44 @@ class ElevensBuilderUtil:
                     current_elevens.remove(sub_off)
                 for sub_on in current_subbed_on_group:
                     current_elevens.append(sub_on)
+                updated_elevens_id = ElevensBuilderUtil.id_for_player_touple(current_elevens)
 
-
-                elevens[ElevensBuilderUtil.id_for_player_touple(current_elevens)] = current_elevens
-
-
-
-
-
+                elevens[updated_elevens_id] = current_elevens
+                minute_eleven_profile_went_on[updated_elevens_id] = minute_of_subs
+        print(len(minute_eleven_profile_went_on.keys()))
 
 
 
+        ElevensBuilderUtil.save_elevens_profiles(elevens, minute_eleven_profile_went_on)
 
+
+
+
+
+
+
+    #returns player_tuples in this order: player_id, player, team_id, subbed_off, subbed_on:
+    @staticmethod
+    def get_match_players(match_id):
+        postgres_connector = PostgresConnector()
+        postgres_connector.open_connection_cursor("premier_league_stats")
+
+        select_query = "select player_id, player, team_id, subbed_off, subbed_on from match_summary_stats where match_id = '" + match_id + "'"
+        select_parameters = ()
+
+        match_players = postgres_connector.execute_parameterized_select_query(select_query, select_parameters)
+        return match_players
+
+    @staticmethod
+    def split_players_into_teams(match_players):
+        initial_elevens_by_team_id = {}
+        #split the players into their teams
+        for player in match_players:
+            team_id = player[2]
+            if initial_elevens_by_team_id.get(team_id) is None:
+                initial_elevens_by_team_id[team_id] = []
+            initial_elevens_by_team_id[team_id].append(player)
+        return initial_elevens_by_team_id
 
 
 
@@ -124,6 +147,11 @@ class ElevensBuilderUtil:
         for player_touple in player_touples:
             id_to_return = id_to_return + player_touple[0]
         return id_to_return
+
+    @staticmethod
+    def save_elevens_profiles(elevens: {}, minute_eleven_profile_went_on: {}):
+        print(elevens)
+        print(minute_eleven_profile_went_on)
 
 
 
