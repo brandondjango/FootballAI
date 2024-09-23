@@ -38,13 +38,15 @@ class ElevensBuilderUtil:
                 elif (minute_subbed_on is not None):
                     subbed_on_players[team].append(player)
 
-        #create elevens based on subbed on and off players
-        elevens = {}
+
         #store when each 11 came onto the field
         minute_eleven_profile_went_on = {}
 
         #for both teams
         for team in base_eleven_profile.keys():
+            #create elevens based on subbed on and off players
+            elevens = {}
+
             #get starters that were subbed off
             starters = base_eleven_profile[team]
             for subbed_off_player in subbed_off_players[team]:
@@ -151,30 +153,41 @@ class ElevensBuilderUtil:
         return id_to_return
 
     @staticmethod
-    def save_elevens_profiles(elevens: {}, minute_eleven_profile_went_on: {}, team: str, match_id: str):
-        json_player_array = []
+    def save_elevens_profiles(elevens: {}, minute_eleven_profile_went_on: {}, team_id: str, match_id: str):
         for elevens_id in elevens.keys():
+            player_array = []
             for player_touple in elevens[elevens_id]:
                 player_hash = {}
                 player_hash["player_id"] = player_touple[0]
                 player_hash["player_name"] = player_touple[1]
-            json_player_array.append(json.dumps(player_hash))
-        print(team)
-        print(elevens_id)
-        print(json_player_array)
-        print(match_id)
-        print(minute_eleven_profile_went_on[elevens_id])
-        print("\n\n\n")
+                player_array.append((player_hash))
+
+            #print(elevens_id)
+            json_player_array=json.dumps(player_array)
+            #print(json_player_array)
+            eleven_to_save = {}
+            eleven_to_save["team_id"] = team_id
+            eleven_to_save["elevens_id"] = elevens_id
+            eleven_to_save["elevens_players"] = json_player_array
+            eleven_to_save["match_id"] = match_id
+            eleven_to_save["minute"] = minute_eleven_profile_went_on[elevens_id]
+
+            ElevensBuilderUtil.insert_elevens_information_into_database(eleven_to_save)
 
 
+    @staticmethod
+    def insert_elevens_information_into_database(elevens_dict: {}):
+        insert_query = ("INSERT INTO " +
+                       "elevens_profiles(team_id, elevens_id, elevens_players,match_id,minutes)" +
+                       " VALUES ((%s),(%s),(%s),(%s),(%s))")
+        insert_parameters = (elevens_dict["team_id"],
+                             elevens_dict["elevens_id"],
+                             str(elevens_dict["elevens_players"]),
+                             elevens_dict["match_id"],
+                             elevens_dict["minute"])
+        postgres_connector = PostgresConnector()
+        postgres_connector.open_connection_cursor("premier_league_stats")
+        postgres_connector.execute_parameterized_insert_query(insert_query, insert_parameters)
 
 
-
-
-
-
-
-
-os.environ['DB_PASS'] = "MySampleThing!#"
-ElevensBuilderUtil.elevens_builder("5d4a5006")
 

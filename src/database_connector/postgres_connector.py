@@ -1,4 +1,5 @@
 import os
+from sqlite3 import OperationalError
 
 import psycopg2
 from google.cloud import secretmanager
