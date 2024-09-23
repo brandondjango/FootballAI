@@ -9,7 +9,7 @@ from src.database_connector.postgres_connector import PostgresConnector
 class ElevensBuilderUtil:
 
     @staticmethod
-    def elevens_builder(match_id):
+    def elevens_builder(match_id: str):
         #player_tuples
         match_players = ElevensBuilderUtil.get_match_players(match_id)
         #hash splitting player_tuples by team id
@@ -81,10 +81,7 @@ class ElevensBuilderUtil:
 
                 elevens[updated_elevens_id] = current_elevens
                 minute_eleven_profile_went_on[updated_elevens_id] = minute_of_subs
-
-
-
-
+            #Save the elevens profiles(once for each team
             ElevensBuilderUtil.save_elevens_profiles(elevens, minute_eleven_profile_went_on, team, match_id)
 
 
@@ -95,7 +92,7 @@ class ElevensBuilderUtil:
 
     #returns player_tuples in this order: player_id, player, team_id, subbed_off, subbed_on:
     @staticmethod
-    def get_match_players(match_id):
+    def get_match_players(match_id: str):
         postgres_connector = PostgresConnector()
         postgres_connector.open_connection_cursor("premier_league_stats")
 
