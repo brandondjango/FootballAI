@@ -9,7 +9,7 @@ from src.database_connector.postgres_connector import PostgresConnector
 class ElevensBuilderUtil:
 
     @staticmethod
-    def elevens_builder(match_id: str):
+    def save_match_elevens(match_id: str):
         #player_tuples
         match_players = ElevensBuilderUtil.get_match_players(match_id)
         #hash splitting player_tuples by team id
@@ -74,7 +74,10 @@ class ElevensBuilderUtil:
 
 
                 for sub_off in current_subbed_off_group:
-                    current_elevens.remove(sub_off)
+                    try:
+                        current_elevens.remove(sub_off)
+                    except Exception as e:
+                        print(str(e))
                 for sub_on in current_subbed_on_group:
                     current_elevens.append(sub_on)
                 updated_elevens_id = ElevensBuilderUtil.id_for_player_touple(current_elevens)
@@ -168,8 +171,10 @@ class ElevensBuilderUtil:
             eleven_to_save["elevens_players"] = json_player_array
             eleven_to_save["match_id"] = match_id
             eleven_to_save["minute"] = minute_eleven_profile_went_on[elevens_id]
-
-            ElevensBuilderUtil.insert_elevens_information_into_database(eleven_to_save)
+            try:
+                ElevensBuilderUtil.insert_elevens_information_into_database(eleven_to_save)
+            except Exception as e:
+                print(str(e))
 
 
     @staticmethod
